@@ -1,0 +1,530 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>数字抽奖工具</title>
+  <style>
+    :root {
+      --bg: #f5f7fb;
+      --card: #ffffff;
+      --text: #1f2937;
+      --sub: #6b7280;
+      --primary: #2563eb;
+      --primary-hover: #1e40af;
+      --danger: #dc2626;
+      --ok: #059669;
+      --border: #dbe2ea;
+      --shadow: 0 8px 24px rgba(15, 23, 42, 0.08);
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top right, #dbeafe 0%, var(--bg) 30%, var(--bg) 100%);
+      color: var(--text);
+      font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+      line-height: 1.5;
+    }
+
+    .container {
+      width: min(1000px, 92%);
+      margin: 36px auto;
+      display: grid;
+      gap: 16px;
+    }
+
+    .panel {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      box-shadow: var(--shadow);
+      padding: 18px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(1.5rem, 2vw, 2rem);
+      letter-spacing: 0.02em;
+    }
+
+    .subtitle {
+      margin-top: 8px;
+      color: var(--sub);
+      font-size: 0.95rem;
+    }
+
+    .input-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(120px, 1fr));
+      gap: 12px;
+      align-items: end;
+    }
+
+    .field {
+      display: grid;
+      gap: 6px;
+    }
+
+    label {
+      font-size: 0.9rem;
+      color: #374151;
+    }
+
+    input[type="number"] {
+      width: 100%;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 1rem;
+      transition: border-color 0.2s ease;
+      outline: none;
+    }
+
+    input[type="number"]:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+    }
+
+    .switch-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding-bottom: 8px;
+      flex-wrap: wrap;
+    }
+
+    .switch-row input[type="checkbox"] {
+      transform: scale(1.15);
+    }
+
+    .actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 14px;
+    }
+
+    button {
+      border: none;
+      border-radius: 10px;
+      padding: 10px 16px;
+      color: #fff;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: transform 0.08s ease, background-color 0.2s ease;
+    }
+
+    button:active {
+      transform: translateY(1px);
+    }
+
+    .btn-primary { background: var(--primary); }
+    .btn-primary:hover { background: var(--primary-hover); }
+    .btn-secondary { background: #475569; }
+    .btn-secondary:hover { background: #334155; }
+    .btn-danger { background: var(--danger); }
+    .btn-danger:hover { background: #991b1b; }
+
+    .message {
+      margin-top: 10px;
+      font-size: 0.93rem;
+      min-height: 1.4em;
+    }
+
+    .message.error { color: var(--danger); }
+    .message.success { color: var(--ok); }
+
+    .result-meta {
+      color: var(--sub);
+      font-size: 0.95rem;
+      margin-bottom: 10px;
+    }
+
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(72px, 1fr));
+      gap: 10px;
+    }
+
+    .number-card {
+      background: linear-gradient(145deg, #eff6ff, #dbeafe);
+      border: 1px solid #bfdbfe;
+      border-radius: 12px;
+      text-align: center;
+      font-size: clamp(1.15rem, 2vw, 1.6rem);
+      font-weight: 700;
+      padding: 14px 8px;
+      opacity: 0;
+      transform: scale(0.95);
+      animation: reveal 300ms ease forwards;
+    }
+
+    @keyframes reveal {
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .history-list {
+      display: grid;
+      gap: 10px;
+    }
+
+    .history-item {
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      background: #f8fafc;
+    }
+
+    .history-head {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      flex-wrap: wrap;
+      font-size: 0.92rem;
+      color: #334155;
+    }
+
+    .history-numbers {
+      margin-top: 8px;
+      font-weight: 600;
+      color: #0f172a;
+      word-break: break-word;
+    }
+
+    .empty {
+      color: var(--sub);
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 780px) {
+      .input-grid {
+        grid-template-columns: repeat(2, minmax(120px, 1fr));
+      }
+    }
+
+    @media (max-width: 480px) {
+      .input-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <section class="panel">
+      <h1>数字抽奖工具</h1>
+      <p class="subtitle">支持单轮不重复抽样，支持可选跨轮次不重复；使用 crypto.getRandomValues 实现随机抽样。</p>
+    </section>
+
+    <section class="panel" aria-label="输入区与操作区">
+      <div class="input-grid">
+        <div class="field">
+          <label for="minInput">最小值 min</label>
+          <input id="minInput" type="number" step="1" placeholder="例如 1" />
+        </div>
+        <div class="field">
+          <label for="maxInput">最大值 max</label>
+          <input id="maxInput" type="number" step="1" placeholder="例如 100" />
+        </div>
+        <div class="field">
+          <label for="countInput">抽奖个数 count</label>
+          <input id="countInput" type="number" step="1" placeholder="例如 10" />
+        </div>
+        <div class="field">
+          <label for="avoidRepeatToggle">跨轮次不重复</label>
+          <div class="switch-row">
+            <input id="avoidRepeatToggle" type="checkbox" />
+            <span>避免重复中奖（跨轮次）</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="actions">
+        <button id="startBtn" class="btn-primary" type="button">开始抽奖</button>
+        <button id="nextBtn" class="btn-secondary" type="button">下一轮抽奖</button>
+        <button id="resetBtn" class="btn-danger" type="button">重置</button>
+      </div>
+      <div id="message" class="message" role="status" aria-live="polite"></div>
+    </section>
+
+    <section class="panel" aria-label="本轮结果区">
+      <h2>本轮结果</h2>
+      <div id="resultMeta" class="result-meta empty">尚未开始抽奖。</div>
+      <div id="resultCards" class="cards" aria-live="polite"></div>
+    </section>
+
+    <section class="panel" aria-label="历史记录区">
+      <h2>历史记录</h2>
+      <div id="historyList" class="history-list">
+        <div class="empty">暂无历史记录。</div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      round: 0,
+      history: [],
+      usedNumbers: new Set(),
+      lastConfig: null
+    };
+
+    const minInput = document.getElementById('minInput');
+    const maxInput = document.getElementById('maxInput');
+    const countInput = document.getElementById('countInput');
+    const avoidRepeatToggle = document.getElementById('avoidRepeatToggle');
+    const startBtn = document.getElementById('startBtn');
+    const nextBtn = document.getElementById('nextBtn');
+    const resetBtn = document.getElementById('resetBtn');
+    const messageEl = document.getElementById('message');
+    const resultMetaEl = document.getElementById('resultMeta');
+    const resultCardsEl = document.getElementById('resultCards');
+    const historyListEl = document.getElementById('historyList');
+
+    /**
+     * 解析并校验输入。
+     * @returns {{ok: true, data: {min:number,max:number,count:number,avoidRepeatAcrossRounds:boolean}} | {ok:false,error:string}}
+     */
+    function parseAndValidateInputs() {
+      const minRaw = minInput.value.trim();
+      const maxRaw = maxInput.value.trim();
+      const countRaw = countInput.value.trim();
+
+      if (!minRaw || !maxRaw || !countRaw) {
+        return { ok: false, error: '请输入完整的 min、max、count。' };
+      }
+
+      const min = Number(minRaw);
+      const max = Number(maxRaw);
+      const count = Number(countRaw);
+
+      if (!Number.isInteger(min) || !Number.isInteger(max) || !Number.isInteger(count)) {
+        return { ok: false, error: 'min、max、count 必须是整数。' };
+      }
+
+      if (min > max) {
+        return { ok: false, error: '输入错误：min 不能大于 max。' };
+      }
+
+      const capacity = max - min + 1;
+
+      if (count < 1) {
+        return { ok: false, error: 'count 必须 >= 1。' };
+      }
+
+      if (count > capacity) {
+        return { ok: false, error: `count 不能超过区间容量（${capacity}）。` };
+      }
+
+      return {
+        ok: true,
+        data: {
+          min,
+          max,
+          count,
+          avoidRepeatAcrossRounds: avoidRepeatToggle.checked
+        }
+      };
+    }
+
+    /**
+     * 生成候选数字集合。
+     */
+    function generateCandidateNumbers(min, max, usedSet, avoidRepeatAcrossRounds) {
+      const candidates = [];
+      for (let n = min; n <= max; n += 1) {
+        if (!avoidRepeatAcrossRounds || !usedSet.has(n)) {
+          candidates.push(n);
+        }
+      }
+      return candidates;
+    }
+
+    /**
+     * 通过拒绝采样生成 [0, maxExclusive) 的无偏随机整数。
+     */
+    function secureRandomInt(maxExclusive) {
+      if (!Number.isInteger(maxExclusive) || maxExclusive <= 0) {
+        throw new Error('maxExclusive 必须是正整数。');
+      }
+
+      const uint32Max = 0x100000000;
+      const threshold = uint32Max - (uint32Max % maxExclusive);
+      const randomBuffer = new Uint32Array(1);
+
+      while (true) {
+        crypto.getRandomValues(randomBuffer);
+        const value = randomBuffer[0];
+        if (value < threshold) {
+          return value % maxExclusive;
+        }
+      }
+    }
+
+    /**
+     * 使用加密随机数驱动 Fisher-Yates 洗牌。
+     */
+    function secureShuffle(array) {
+      for (let i = array.length - 1; i > 0; i -= 1) {
+        const j = secureRandomInt(i + 1);
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    /**
+     * 渲染本轮结果（数字同时出现）。
+     */
+    function renderCurrentResult(round, timestamp, numbers) {
+      resultMetaEl.classList.remove('empty');
+      resultMetaEl.textContent = `第 ${round} 轮 · ${timestamp} · 共 ${numbers.length} 个`;
+      resultCardsEl.innerHTML = '';
+
+      const fragment = document.createDocumentFragment();
+      numbers.forEach((num) => {
+        const card = document.createElement('div');
+        card.className = 'number-card';
+        card.textContent = String(num);
+        fragment.appendChild(card);
+      });
+
+      resultCardsEl.appendChild(fragment);
+    }
+
+    /**
+     * 渲染历史记录。
+     */
+    function renderHistory(history) {
+      if (!history.length) {
+        historyListEl.innerHTML = '<div class="empty">暂无历史记录。</div>';
+        return;
+      }
+
+      historyListEl.innerHTML = '';
+      const fragment = document.createDocumentFragment();
+
+      history.forEach((record) => {
+        const item = document.createElement('article');
+        item.className = 'history-item';
+
+        const head = document.createElement('div');
+        head.className = 'history-head';
+        head.innerHTML = `<span>第 ${record.round} 轮</span><span>${record.timestamp}</span>`;
+
+        const numbers = document.createElement('div');
+        numbers.className = 'history-numbers';
+        numbers.textContent = record.numbers.join('、');
+
+        item.appendChild(head);
+        item.appendChild(numbers);
+        fragment.prepend(item);
+      });
+
+      historyListEl.appendChild(fragment);
+    }
+
+    function setMessage(text, type = 'error') {
+      messageEl.className = `message ${type}`;
+      messageEl.textContent = text;
+    }
+
+    function clearMessage() {
+      messageEl.className = 'message';
+      messageEl.textContent = '';
+    }
+
+    function drawRound(config) {
+      const { min, max, count, avoidRepeatAcrossRounds } = config;
+      const candidates = generateCandidateNumbers(min, max, state.usedNumbers, avoidRepeatAcrossRounds);
+
+      if (candidates.length < count) {
+        setMessage(`剩余可抽数字仅 ${candidates.length} 个，不足以抽取 ${count} 个。请重置或调整参数。`);
+        return;
+      }
+
+      const shuffled = secureShuffle([...candidates]);
+      const numbers = shuffled.slice(0, count).sort((a, b) => a - b);
+
+      if (avoidRepeatAcrossRounds) {
+        numbers.forEach((n) => state.usedNumbers.add(n));
+      }
+
+      state.round += 1;
+      const timestamp = new Date().toLocaleString('zh-CN', { hour12: false });
+      const record = {
+        round: state.round,
+        timestamp,
+        numbers
+      };
+
+      state.history.push(record);
+      renderCurrentResult(record.round, record.timestamp, record.numbers);
+      renderHistory(state.history);
+      state.lastConfig = { ...config };
+      setMessage(`第 ${state.round} 轮抽奖完成。`, 'success');
+    }
+
+    function handleStart() {
+      const parsed = parseAndValidateInputs();
+      if (!parsed.ok) {
+        setMessage(parsed.error);
+        return;
+      }
+
+      clearMessage();
+      drawRound(parsed.data);
+    }
+
+    function handleNextRound() {
+      if (!state.lastConfig) {
+        setMessage('请先完成至少一轮抽奖，再执行“下一轮抽奖”。');
+        return;
+      }
+
+      const config = {
+        ...state.lastConfig,
+        avoidRepeatAcrossRounds: avoidRepeatToggle.checked
+      };
+
+      state.lastConfig = config;
+      clearMessage();
+      drawRound(config);
+    }
+
+    function handleReset() {
+      state.round = 0;
+      state.history = [];
+      state.usedNumbers = new Set();
+      state.lastConfig = null;
+
+      resultMetaEl.className = 'result-meta empty';
+      resultMetaEl.textContent = '尚未开始抽奖。';
+      resultCardsEl.innerHTML = '';
+      renderHistory(state.history);
+      clearMessage();
+      setMessage('已重置，历史与当前结果已清空。', 'success');
+    }
+
+    startBtn.addEventListener('click', handleStart);
+    nextBtn.addEventListener('click', handleNextRound);
+    resetBtn.addEventListener('click', handleReset);
+
+    [minInput, maxInput, countInput].forEach((inputEl) => {
+      inputEl.addEventListener('keydown', (event) => {
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          handleStart();
+        }
+      });
+    });
+  </script>
+</body>
+</html>
